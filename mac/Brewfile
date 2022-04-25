@@ -1,0 +1,9 @@
+cask_args appdir: "/Applications"
+
+brew "git"
+brew "htop"
+brew "python3"
+brew "ruby"
+brew "terraform"
+cask "flycut"
+cask "keepingyouawake"
