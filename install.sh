@@ -1,10 +1,12 @@
 #!/bin/sh
 
-if [ ! -d "$HOME/.yadr-nirespire"]; then
-    echo "Installing Nirespire-YADR configurations for the first time"
-    git clone --depth=1 https://github.com/Nirespire/dotfiles.git "$HOME/.yard-nirespire"
-    cd "$HOME/.yadr-nirespire"
-    ./setup.sh
+DOTFILES_DIR="$HOME/.dotfiles"
+
+if [ ! -d "$DOTFILES_DIR" ]; then
+  echo "==> Cloning dotfiles to $DOTFILES_DIR"
+  git clone https://github.com/Nirespire/dotfiles.git "$DOTFILES_DIR"
+  cd "$DOTFILES_DIR"
+  ./setup.sh
 else
-    echo "Nirespire-YADR is already installed"
+  echo "==> Dotfiles already installed at $DOTFILES_DIR"
 fi
