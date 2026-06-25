@@ -1,0 +1,10 @@
+{
+  "model": "opusplan",
+  "theme": "auto",
+  "agentPushNotifEnabled": true,
+  "statusLine": {
+    "type": "command",
+    "command": "/Users/sanjaynair/.claude/statusline.sh",
+    "padding": 0
+  }
+}

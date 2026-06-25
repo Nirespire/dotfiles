@@ -21,6 +21,8 @@ Personal macOS dotfiles for **Apple Silicon** (`/opt/homebrew`). Shell: **zsh ex
 | `Brewfile` | Desired-state formula/cask list; a superset (not all packages may be installed) |
 | `setup.sh` | Full bootstrap: Homebrew → brew bundle → pure → nvm → symlink dotfiles |
 | `install.sh` | Remote curl bootstrap: clones repo to `~/.dotfiles` then runs `setup.sh` |
+| `.claude/settings.json` | Claude Code global settings (model, theme, statusline wiring) |
+| `.claude/statusline.sh` | Claude Code custom status line script (cwd · branch · model · ctx bar · rate limits) |
 
 ## Invariants — do not break these
 
@@ -28,6 +30,7 @@ Personal macOS dotfiles for **Apple Silicon** (`/opt/homebrew`). Shell: **zsh ex
 2. **pure** lives at `~/.zsh/pure` (git clone from `sindresorhus/pure`), not installed via brew. `setup.sh` handles this.
 3. **nvm** lives at `~/.nvm` (installed via the nvm install script), not via brew. `.zprofile` loads it; `setup.sh` installs it.
 4. **`SSH_AUTH_SOCK`** in `.zshrc` is the Bitwarden Desktop SSH agent socket path — machine-specific, leave as-is.
+5. **`statusLine.command`** in `.claude/settings.json` is the absolute path `/Users/sanjaynair/.claude/statusline.sh` — Claude Code does not guarantee `~`/`$HOME` expansion, so this must stay absolute. It is intentionally machine-specific (same rationale as `SSH_AUTH_SOCK`).
 
 ## Conventions
 

@@ -39,6 +39,8 @@ DOTFILES=(
   ".zprofile"
   ".aliases"
   ".gitconfig"
+  ".claude/settings.json"
+  ".claude/statusline.sh"
 )
 
 for file in "${DOTFILES[@]}"; do
@@ -49,6 +51,8 @@ for file in "${DOTFILES[@]}"; do
     echo "==> WARNING: $src not found, skipping"
     continue
   fi
+
+  mkdir -p "$(dirname "$dest")"
 
   if [ -e "$dest" ] && [ ! -L "$dest" ]; then
     echo "==> Backing up existing $dest to ${dest}.bak"
