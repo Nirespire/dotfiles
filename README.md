@@ -26,7 +26,8 @@ Idempotent — safe to re-run.
 2. Runs `brew bundle` to install packages from `Brewfile`
 3. Clones [pure](https://github.com/sindresorhus/pure) prompt to `~/.zsh/pure`
 4. Installs [nvm](https://github.com/nvm-sh/nvm) to `~/.nvm`
-5. Symlinks each dotfile from the repo into `$HOME` (backs up pre-existing files as `*.bak`)
+5. Configures the Dock to auto-hide with zero-delay reveal on mouseover
+6. Symlinks each dotfile from the repo into `$HOME` (backs up pre-existing files as `*.bak`)
 
 ## What's included
 

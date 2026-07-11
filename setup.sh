@@ -33,7 +33,13 @@ else
   echo "==> nvm already installed; skipping"
 fi
 
-# ── 4. Symlink dotfiles ───────────────────────────────────────────────────────
+# ── 4. macOS Dock ─────────────────────────────────────────────────────────────
+echo "==> Configuring Dock auto-hide"
+defaults write com.apple.dock autohide -bool true
+defaults write com.apple.dock autohide-delay -float 0
+killall Dock
+
+# ── 5. Symlink dotfiles ───────────────────────────────────────────────────────
 DOTFILES=(
   ".zshrc"
   ".zprofile"
