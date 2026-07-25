@@ -1,0 +1,5 @@
+# domain	key	type	value
+# Read by setup.sh (apply) and reconcile.sh (compare/update).
+# type is the `defaults` type flag without the leading dash: bool | int | float | string
+com.apple.dock	autohide	bool	true
+com.apple.dock	autohide-delay	float	0
