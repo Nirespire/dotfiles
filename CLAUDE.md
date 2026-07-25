@@ -19,7 +19,10 @@ Personal macOS dotfiles for **Apple Silicon** (`/opt/homebrew`). Shell: **zsh ex
 | `.aliases` | Shell aliases (`untar`, `tarup`); sourced by `.zshrc` |
 | `.gitconfig` | Git identity + gh credential helpers |
 | `Brewfile` | Desired-state formula/cask list; a superset (not all packages may be installed) |
-| `setup.sh` | Full bootstrap: Homebrew → brew bundle → pure → nvm → symlink dotfiles |
+| `dotfiles.list` | List of repo-relative paths symlinked by `setup.sh`; shared with `reconcile.sh` |
+| `macos-defaults` | Curated watchlist of `defaults` keys (domain/key/type/value) applied by `setup.sh`; shared with `reconcile.sh` |
+| `setup.sh` | Full bootstrap: Homebrew → brew bundle → pure → nvm → apply macOS defaults → symlink dotfiles |
+| `reconcile.sh` | Reverse direction: finds Brew packages, macOS defaults, and dotfiles present on the machine but missing from the repo, and walks each one with a y/N prompt to write it back |
 | `install.sh` | Remote curl bootstrap: clones repo to `~/.dotfiles` then runs `setup.sh` |
 | `.claude/settings.json` | Claude Code global settings (model, theme, statusline wiring) |
 | `.claude/statusline.sh` | Claude Code custom status line script (cwd · branch · model · ctx bar · rate limits) |
@@ -35,5 +38,6 @@ Personal macOS dotfiles for **Apple Silicon** (`/opt/homebrew`). Shell: **zsh ex
 ## Conventions
 
 - Add new shell aliases to `.aliases` (not inline in `.zshrc`).
-- After `brew install`/`brew uninstall`, update `Brewfile` manually or run `brew bundle dump --force` to regenerate it.
-- After adding a new dotfile to the repo, add it to the `DOTFILES` array in `setup.sh` and re-run `setup.sh`.
+- After `brew install`/`brew uninstall`, update `Brewfile` manually, or run `./reconcile.sh` to be walked through adding anything installed but untracked.
+- After adding a new dotfile to the repo, add its repo-relative path to `dotfiles.list` and re-run `setup.sh`.
+- To pull drift from the machine back into the repo (new Brew packages, changed macOS defaults, new dotfiles worth tracking), run `./reconcile.sh`. It prompts per item and leaves changes in the working tree — review with `git diff` and commit yourself.

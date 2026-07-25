@@ -1,0 +1,6 @@
+.zshrc
+.zprofile
+.aliases
+.gitconfig
+.claude/settings.json
+.claude/statusline.sh

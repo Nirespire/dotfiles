@@ -33,21 +33,22 @@ else
   echo "==> nvm already installed; skipping"
 fi
 
-# ── 4. macOS Dock ─────────────────────────────────────────────────────────────
-echo "==> Configuring Dock auto-hide"
-defaults write com.apple.dock autohide -bool true
-defaults write com.apple.dock autohide-delay -float 0
-killall Dock
+# ── 4. macOS defaults ─────────────────────────────────────────────────────────
+echo "==> Applying macOS defaults"
+dock_changed=false
+while read -r domain key type value; do
+  [[ -z "$domain" || "$domain" == \#* ]] && continue
+  defaults write "$domain" "$key" "-$type" "$value"
+  [[ "$domain" == "com.apple.dock" ]] && dock_changed=true
+done < "$DOTFILES_DIR/macos-defaults"
+[ "$dock_changed" = true ] && killall Dock
 
 # ── 5. Symlink dotfiles ───────────────────────────────────────────────────────
-DOTFILES=(
-  ".zshrc"
-  ".zprofile"
-  ".aliases"
-  ".gitconfig"
-  ".claude/settings.json"
-  ".claude/statusline.sh"
-)
+DOTFILES=()
+while read -r file; do
+  [[ -z "$file" || "$file" == \#* ]] && continue
+  DOTFILES+=("$file")
+done < "$DOTFILES_DIR/dotfiles.list"
 
 for file in "${DOTFILES[@]}"; do
   src="$DOTFILES_DIR/$file"
