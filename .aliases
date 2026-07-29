@@ -1,2 +1,6 @@
 alias untar='tar -xzfv'
 alias tarup='tar -czvf'
+alias bup='brew update && brew upgrade'
+alias gco='git checkout'
+alias gl='git pull'
+alias gp='git push'

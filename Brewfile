@@ -5,5 +5,6 @@ brew "git"
 brew "git-crypt"
 brew "jq"
 brew "wget"
+brew "tmux"
 
 cask "claude-code"
