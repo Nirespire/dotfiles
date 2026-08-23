@@ -1,0 +1,27 @@
+# Claude Code skills vendored from github.com/mattpocock/skills.
+#
+# The "Main Flow" documented at https://www.aihero.dev/ :
+#   grill-with-docs → to-spec → to-tickets → implement → code-review
+#
+# Paths are relative to the upstream repo root. Each listed directory is
+# mirrored verbatim into .claude/skills/<basename> by ./sync-skills.sh, and
+# symlinked into ~/.claude/skills/<basename> by ./setup.sh.
+#
+# Do NOT hand-edit anything under .claude/skills/ — the next sync overwrites it.
+# To track or untrack a skill, change this file and re-run ./sync-skills.sh.
+
+# ── The Main Flow ────────────────────────────────────────────────────────────
+skills/engineering/grill-with-docs
+skills/engineering/to-spec
+skills/engineering/to-tickets
+skills/engineering/implement
+skills/engineering/code-review
+
+# ── Dependency closure: skills the flow above invokes by name ───────────────
+# grill-with-docs calls the Skill tool for "grilling" and "domain-modeling"
+skills/productivity/grilling
+skills/engineering/domain-modeling
+# implement says "use /tdd where possible"
+skills/engineering/tdd
+# to-spec, to-tickets and code-review all defer to /setup-matt-pocock-skills
+skills/engineering/setup-matt-pocock-skills

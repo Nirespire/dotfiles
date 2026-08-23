@@ -70,5 +70,37 @@ for file in "${DOTFILES[@]}"; do
   ln -sf "$src" "$dest"
 done
 
+# ── 6. Symlink Claude Code skills ───────────────────────────────────────
+# Each skill is linked individually rather than linking .claude/skills wholesale,
+# so any hand-written skills already in ~/.claude/skills keep working.
+SKILLS=()
+while read -r path; do
+  [[ -z "$path" || "$path" == \#* ]] && continue
+  SKILLS+=("$(basename "$path")")
+done < "$DOTFILES_DIR/skills.list"
+
+if [ ${#SKILLS[@]} -gt 0 ]; then
+  echo "==> Linking ${#SKILLS[@]} Claude Code skills"
+  mkdir -p "$HOME/.claude/skills"
+
+  for skill in "${SKILLS[@]}"; do
+    src="$DOTFILES_DIR/.claude/skills/$skill"
+    dest="$HOME/.claude/skills/$skill"
+
+    if [ ! -d "$src" ]; then
+      echo "==> WARNING: $src not found, skipping (run ./sync-skills.sh)"
+      continue
+    fi
+
+    if [ -e "$dest" ] && [ ! -L "$dest" ]; then
+      echo "==> Backing up existing $dest to ${dest}.bak"
+      mv "$dest" "${dest}.bak"
+    fi
+
+    # -n so re-running replaces the link instead of nesting inside it
+    ln -sfn "$src" "$dest"
+  done
+fi
+
 echo ""
 echo "✓ Done. Open a new terminal to pick up the new shell config."
