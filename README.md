@@ -92,6 +92,12 @@ Note that `code-review` deliberately shadows Claude Code's own built-in
 `/code-review`, so that `implement`'s cross-reference resolves to the two-axis
 reviewer the upstream docs describe.
 
+Upstream ships an `agents/openai.yaml` beside each skill — a Codex harness
+manifest encoding the same metadata Claude reads from `SKILL.md` frontmatter.
+Those are excluded, since nothing here drives Codex. A useful side effect: an
+upstream commit touching only those files produces no diff, so the daily job
+opens no PR for it.
+
 **These files are generated.** `sync-skills.sh` deletes and re-copies each skill
 directory from upstream, so hand-edits are lost on the next sync. Change
 `skills.list` to track a different set:

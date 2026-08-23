@@ -12,6 +12,7 @@ To track or untrack a skill, change `skills.list` and re-run `./sync-skills.sh`.
 | Plugin version | `1.2.3` |
 | Upstream commit date | 2026-08-21 |
 | Main flow | grill-with-docs → to-spec → to-tickets → implement → code-review |
+| Excluded | `agents/openai.yaml` — Codex harness manifests, unused by Claude |
 
 ## Vendored skills
 

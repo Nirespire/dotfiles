@@ -7,6 +7,9 @@
 # mirrored verbatim into .claude/skills/<basename> by ./sync-skills.sh, and
 # symlinked into ~/.claude/skills/<basename> by ./setup.sh.
 #
+# The mirror is upstream minus each skill's agents/openai.yaml: those are Codex
+# harness manifests, and this repo only drives Claude.
+#
 # Do NOT hand-edit anything under .claude/skills/ — the next sync overwrites it.
 # To track or untrack a skill, change this file and re-run ./sync-skills.sh.
 

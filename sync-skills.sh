@@ -23,6 +23,13 @@ UPSTREAM_REF="main"
 # vendor is no longer "the main flow" and a human needs to re-pick it.
 EXPECTED_CHAIN="grill-with-docs → to-spec → to-tickets → implement → code-review"
 
+# Upstream ships a Codex harness manifest beside each skill. This repo only drives
+# Claude, and SKILL.md frontmatter already carries the same metadata, so drop it.
+# Named as a file rather than the whole agents/ dir on purpose: if upstream ever
+# adds another file there it survives, and shows up in the next sync PR instead of
+# disappearing silently.
+EXCLUDE_FILE="agents/openai.yaml"
+
 echo "==> Syncing skills into $SKILLS_DIR"
 
 if [ ! -f "$SKILLS_LIST" ]; then
@@ -97,6 +104,9 @@ for path in "${WANTED[@]}"; do
   # rm first so upstream file deletions and renames propagate
   rm -rf "${SKILLS_DIR:?}/$name"
   cp -R "$UPSTREAM_DIR/$path" "$SKILLS_DIR/$name"
+  rm -f "$SKILLS_DIR/$name/$EXCLUDE_FILE"
+  # tidy the dir away when that was its only file; rmdir fails harmlessly if not
+  rmdir "$SKILLS_DIR/$name/$(dirname "$EXCLUDE_FILE")" 2>/dev/null || true
   echo "==> Vendored $path -> .claude/skills/$name"
 done
 
@@ -130,6 +140,7 @@ done
   echo "| Plugin version | \`$UPSTREAM_VERSION\` |"
   echo "| Upstream commit date | $UPSTREAM_DATE |"
   echo "| Main flow | $EXPECTED_CHAIN |"
+  echo "| Excluded | \`$EXCLUDE_FILE\` — Codex harness manifests, unused by Claude |"
   if [ "$chain_ok" = false ]; then
     echo ""
     echo "> **⚠️ The upstream docs no longer state that main flow.** The vendored set"
