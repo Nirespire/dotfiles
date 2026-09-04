@@ -8,9 +8,9 @@ To track or untrack a skill, change `skills.list` and re-run `./sync-skills.sh`.
 |---|---|
 | Upstream | [`mattpocock/skills`](https://github.com/mattpocock/skills) |
 | Ref | `main` |
-| Commit | [`5b15a47`](https://github.com/mattpocock/skills/commit/5b15a47f2d7150f545fbcacbfe381787fc0230dc) |
+| Commit | [`3cca18b`](https://github.com/mattpocock/skills/commit/3cca18b368ae95cdbdebbff572ccafa662551015) |
 | Plugin version | `1.2.3` |
-| Upstream commit date | 2026-08-21 |
+| Upstream commit date | 2026-09-04 |
 | Main flow | grill-with-docs → to-spec → to-tickets → implement → code-review |
 | Excluded | `agents/openai.yaml` — Codex harness manifests, unused by Claude |
 
