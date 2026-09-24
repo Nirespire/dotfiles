@@ -7,7 +7,8 @@ Personal macOS dotfiles for **Apple Silicon** (`/opt/homebrew`). Shell: **zsh ex
 `setup.sh` **symlinks** each tracked dotfile into `$HOME` (with `.bak` backup of any pre-existing non-symlink file). The repo is the single source of truth — always edit the repo copy, not the file in `~`.
 
 ```sh
-./setup.sh     # run from repo root; idempotent
+./setup.sh          # run from repo root; idempotent
+./setup.sh --work   # work profile: also Brewfile.work + acli sign-in (or DOTFILES_PROFILE=work)
 ```
 
 ## File roles
@@ -19,9 +20,10 @@ Personal macOS dotfiles for **Apple Silicon** (`/opt/homebrew`). Shell: **zsh ex
 | `.aliases` | Shell aliases (`untar`, `tarup`); sourced by `.zshrc` |
 | `.gitconfig` | Git identity + gh credential helpers |
 | `Brewfile` | Desired-state formula/cask list; a superset (not all packages may be installed) |
+| `Brewfile.work` | Work-profile-only packages, installed by `setup.sh --work`. Currently `acli` from the third-party `atlassian/acli` tap |
 | `dotfiles.list` | List of repo-relative paths symlinked by `setup.sh`; shared with `reconcile.sh` |
 | `macos-defaults` | Curated watchlist of `defaults` keys (domain/key/type/value) applied by `setup.sh`; shared with `reconcile.sh` |
-| `setup.sh` | Full bootstrap: Homebrew → brew bundle → pure → nvm → apply macOS defaults → symlink dotfiles |
+| `setup.sh` | Full bootstrap: Homebrew → brew bundle (+ `Brewfile.work` on `--work`) → pure → nvm → apply macOS defaults → symlink dotfiles → (work) `acli` sign-in via Atlassian API token |
 | `reconcile.sh` | Reverse direction: finds Brew packages, macOS defaults, and dotfiles present on the machine but missing from the repo, and walks each one with a y/N prompt to write it back |
 | `install.sh` | Remote curl bootstrap: clones repo to `~/.dotfiles` then runs `setup.sh` |
 | `.claude/settings.json` | Claude Code global settings (model, theme, statusline wiring) |
@@ -41,6 +43,9 @@ Personal macOS dotfiles for **Apple Silicon** (`/opt/homebrew`). Shell: **zsh ex
 6. **`.claude/skills/**` is vendored — never hand-edit it.** `sync-skills.sh` deletes and re-copies each skill directory wholesale, so any local edit is silently lost on the next sync (and the daily Action will re-open a PR reverting it). To change *what* is tracked, edit `skills.list`; to change a skill's *content*, send a PR upstream to `mattpocock/skills`. The mirror is upstream **minus** each skill's `agents/openai.yaml` (Codex harness manifests, unused by Claude), so the tree differing from upstream by exactly those files is expected, not drift.
 7. **`code-review` intentionally shadows Claude Code's built-in `/code-review`.** The vendored skill keeps its upstream name so `implement`'s "use `/code-review` to review the work" instruction resolves to the two-axis (Standards + Spec) reviewer the upstream docs describe. Renaming it breaks that cross-reference.
 8. **`EXPECTED_CHAIN` in `sync-skills.sh` is a tripwire, not decoration.** It holds the main flow as documented upstream (`grill-with-docs → to-spec → to-tickets → implement → code-review`). If upstream stops saying it, the sync still runs but exits 3 and the PR is flagged — because the set of skills in `skills.list` was chosen to match that chain and may no longer be right.
+
+9. **Third-party taps must be trusted in the Brewfile, per item.** Homebrew 6+ won't load an untrusted tap. Use a fully qualified `brew "owner/tap/formula", trusted: true` rather than `tap "…", trusted: true`, which would trust everything the tap ever ships. Never set `HOMEBREW_NO_REQUIRE_TAP_TRUST`.
+10. **Work-only packages go in `Brewfile.work`, not `Brewfile`.** The personal profile must not pull work tooling. `reconcile.sh` treats `Brewfile.work` entries as already tracked.
 
 ## Conventions
 
