@@ -15,7 +15,7 @@ Personal macOS dotfiles for **Apple Silicon** (`/opt/homebrew`). Shell: **zsh ex
 | File | Purpose |
 |------|---------|
 | `.zshrc` | Interactive shell: Bitwarden SSH agent, Docker completions, compinit, pure prompt, sources `.aliases` |
-| `.zprofile` | Login shell: brew shellenv, nvm loader |
+| `.zprofile` | Login shell: brew shellenv, nvm loader, Go bin on `PATH` |
 | `.aliases` | Shell aliases (`untar`, `tarup`); sourced by `.zshrc` |
 | `.gitconfig` | Git identity + gh credential helpers |
 | `Brewfile` | Desired-state formula/cask list; a superset (not all packages may be installed) |
