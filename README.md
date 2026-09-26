@@ -50,7 +50,7 @@ only, never removed (the Brewfile is an intentional superset across machines).
 | File | Purpose |
 |------|---------|
 | `.zshrc` | Interactive shell: Bitwarden SSH agent, Docker completions, pure prompt, sources `.aliases` |
-| `.zprofile` | Login shell: brew shellenv, nvm loader |
+| `.zprofile` | Login shell: brew shellenv, nvm loader, Go bin on `PATH` |
 | `.aliases` | Shell aliases (`untar`, `tarup`) |
 | `.gitconfig` | Git identity + `gh` credential helpers |
 | `Brewfile` | Desired-state formula/cask list |
