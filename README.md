@@ -20,15 +20,33 @@ Clones the repo to `~/.dotfiles` and runs `setup.sh`.
 
 Idempotent — safe to re-run.
 
+**Work machine:** add `--work` (or set `DOTFILES_PROFILE=work`):
+
+```sh
+./setup.sh --work
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nirespire/dotfiles/master/install.sh)" -- --work
+```
+
+The work profile also installs `Brewfile.work` and signs in to the
+[Atlassian CLI](https://developer.atlassian.com/cloud/acli/) (`acli`) with an
+API token. It prompts for site, email and token (opening the token page), or
+reads `ATLASSIAN_SITE`, `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` if set.
+Already signed in → skipped.
+
 ## What `setup.sh` does
 
 1. Installs [Homebrew](https://brew.sh) if missing
-2. Runs `brew bundle` to install packages from `Brewfile`
+2. Runs `brew bundle` to install packages from `Brewfile` (plus `Brewfile.work` on the work profile)
 3. Clones [pure](https://github.com/sindresorhus/pure) prompt to `~/.zsh/pure`
 4. Installs [nvm](https://github.com/nvm-sh/nvm) to `~/.nvm`
 5. Applies the macOS defaults listed in `macos-defaults` (currently: Dock auto-hide with zero-delay reveal)
 6. Symlinks each dotfile listed in `dotfiles.list` from the repo into `$HOME` (backs up pre-existing files as `*.bak`)
 7. Symlinks each Claude Code skill listed in `skills.list` into `~/.claude/skills/` (one symlink per skill, so hand-written skills already there keep working)
+8. **Work profile only:** signs `acli` in with an Atlassian API token (never fails setup; re-run to retry)
+
+`Brewfile.work` pulls `acli` from Atlassian's third-party tap. Homebrew 6+
+refuses to load untrusted taps, so the entry declares `trusted: true` on the
+fully qualified formula — trusting only `acli`, not the whole tap.
 
 ## Reconciling machine drift back into the repo
 
@@ -54,6 +72,7 @@ only, never removed (the Brewfile is an intentional superset across machines).
 | `.aliases` | Shell aliases (`untar`, `tarup`) |
 | `.gitconfig` | Git identity + `gh` credential helpers |
 | `Brewfile` | Desired-state formula/cask list |
+| `Brewfile.work` | Work-profile additions (`acli` via the trusted `atlassian/acli` tap) |
 | `dotfiles.list` | Repo-relative paths symlinked by `setup.sh`; shared with `reconcile.sh` |
 | `macos-defaults` | Curated watchlist of `defaults` keys applied by `setup.sh`; shared with `reconcile.sh` |
 | `setup.sh` | Full bootstrap script |
