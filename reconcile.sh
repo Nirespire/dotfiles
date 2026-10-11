@@ -11,6 +11,7 @@ DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=tracked-paths.sh
 source "$DOTFILES_DIR/tracked-paths.sh"
 BREWFILE="$DOTFILES_DIR/Brewfile"
+WORK_BREWFILE="$DOTFILES_DIR/Brewfile.work"
 MACOS_DEFAULTS="$DOTFILES_DIR/macos-defaults"
 DOTFILES_LIST="$DOTFILES_DIR/dotfiles.list"
 
@@ -79,6 +80,13 @@ else
     [ -n "$name" ] && existing_casks+=("$name")
   done < <(grep -oE '^cask "[^"]+"' "$BREWFILE" 2>/dev/null | sed -E 's/^cask "(.+)"$/\1/')
 
+  # Work-profile entries count as tracked, so they aren't offered for the main
+  # Brewfile; they stay out of existing_* so the report below ignores them.
+  work_entries=()
+  while read -r name; do
+    [ -n "$name" ] && work_entries+=("$name")
+  done < <(grep -oE '^(brew|cask) "[^"]+"' "$WORK_BREWFILE" 2>/dev/null | sed -E 's/^(brew|cask) "(.+)"$/\2/')
+
   brewfile_add() {
     # $1 = brew|cask, $2 = name
     local kind="$1" name="$2" content lineno tmp
@@ -95,6 +103,7 @@ else
   skip_rest=false
   for name in "${installed_onrequest[@]}"; do
     array_contains "$name" "${existing_brews[@]}" && continue
+    array_contains "$name" ${work_entries[@]+"${work_entries[@]}"} && continue
     if [ "$skip_rest" = true ]; then continue; fi
     prompt_yn "Add formula '$name' to Brewfile?"; rc=$?
     if [ $rc -eq 0 ]; then
@@ -110,6 +119,7 @@ else
   skip_rest=false
   for name in "${installed_casks[@]}"; do
     array_contains "$name" "${existing_casks[@]}" && continue
+    array_contains "$name" ${work_entries[@]+"${work_entries[@]}"} && continue
     if [ "$skip_rest" = true ]; then continue; fi
     prompt_yn "Add cask '$name' to Brewfile?"; rc=$?
     if [ $rc -eq 0 ]; then

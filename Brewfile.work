@@ -1,0 +1,7 @@
+# Work-profile packages, installed on top of Brewfile by `./setup.sh --work`.
+
+# Atlassian CLI (acli). Third-party tap: Homebrew 6+ refuses to load it until
+# trusted. `trusted: true` on the fully qualified formula trusts only acli —
+# not everything the tap might ship in future.
+tap "atlassian/acli"
+brew "atlassian/acli/acli", trusted: true

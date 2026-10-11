@@ -20,14 +20,33 @@ Clones the repo to `~/.dotfiles` and runs `setup.sh`.
 
 Idempotent — safe to re-run.
 
+**Work machine:** add `--work` (or set `DOTFILES_PROFILE=work`):
+
+```sh
+./setup.sh --work
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Nirespire/dotfiles/master/install.sh)" -- --work
+```
+
+The work profile also installs `Brewfile.work` and signs in to the
+[Atlassian CLI](https://developer.atlassian.com/cloud/acli/) (`acli`) with an
+API token. It prompts for site, email and token (opening the token page), or
+reads `ATLASSIAN_SITE`, `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` if set.
+Already signed in → skipped.
+
 ## What `setup.sh` does
 
 1. Installs [Homebrew](https://brew.sh) if missing
-2. Runs `brew bundle` to install packages from `Brewfile`
+2. Runs `brew bundle` to install packages from `Brewfile` (plus `Brewfile.work` on the work profile)
 3. Clones [pure](https://github.com/sindresorhus/pure) prompt to `~/.zsh/pure`
 4. Installs [nvm](https://github.com/nvm-sh/nvm) to `~/.nvm`
 5. Applies the macOS defaults listed in `macos-defaults` (currently: Dock auto-hide with zero-delay reveal)
 6. Symlinks each dotfile listed in `dotfiles.list`, plus every file under `.claude/mods/`, from the repo into `$HOME` (backs up pre-existing files as `*.bak`)
+7. Symlinks each Claude Code skill listed in `skills.list` into `~/.claude/skills/` (one symlink per skill, so hand-written skills already there keep working)
+8. **Work profile only:** signs `acli` in with an Atlassian API token (never fails setup; re-run to retry)
+
+`Brewfile.work` pulls `acli` from Atlassian's third-party tap. Homebrew 6+
+refuses to load untrusted taps, so the entry declares `trusted: true` on the
+fully qualified formula — trusting only `acli`, not the whole tap.
 
 ## Reconciling machine drift back into the repo
 
@@ -50,15 +69,20 @@ only, never removed (the Brewfile is an intentional superset across machines).
 | File | Purpose |
 |------|---------|
 | `.zshrc` | Interactive shell: Bitwarden SSH agent, Docker completions, pure prompt, sources `.aliases` |
-| `.zprofile` | Login shell: brew shellenv, nvm loader |
+| `.zprofile` | Login shell: brew shellenv, nvm loader, Go bin on `PATH` |
 | `.aliases` | Shell aliases (`untar`, `tarup`) |
 | `.gitconfig` | Git identity + `gh` credential helpers |
 | `Brewfile` | Desired-state formula/cask list |
+| `Brewfile.work` | Work-profile additions (`acli` via the trusted `atlassian/acli` tap) |
 | `dotfiles.list` | Repo-relative paths symlinked by `setup.sh`; shared with `reconcile.sh` |
 | `macos-defaults` | Curated watchlist of `defaults` keys applied by `setup.sh`; shared with `reconcile.sh` |
 | `setup.sh` | Full bootstrap script |
 | `reconcile.sh` | Walks machine → repo drift (Brew, defaults, dotfiles) and writes back what you accept |
 | `install.sh` | Remote curl bootstrap: clones repo then runs `setup.sh` |
+| `.claude/skills/` | Vendored Claude Code skills — generated, never hand-edited |
+| `skills.list` | Upstream paths of the vendored skills; shared with `sync-skills.sh` and `setup.sh` |
+| `sync-skills.sh` | Mirrors the vendored skills from upstream; leaves changes in the working tree |
+| `.github/workflows/sync-skills.yml` | Daily job that runs the sync and opens a draft PR when upstream moves |
 | `.claude/settings.json` | Claude Code settings (model, theme, `CLAUDE_CODE_PLUGIN_DIRS` that loads the mods) |
 | `.claude/mods/` | Claude Code mods, one folder each; `statusline` draws cwd · branch · model · context · rate limits |
 | `tracked-paths.sh` | Shared by `setup.sh`/`reconcile.sh`: `dotfiles.list` plus every mod file |
@@ -70,3 +94,54 @@ only, never removed (the Brewfile is an intentional superset across machines).
 - The repo is the source of truth. Always edit files here, not in `~`.
 - `SSH_AUTH_SOCK` in `.zshrc` is machine-specific and intentionally not portable.
 - Mods load from `env.CLAUDE_CODE_PLUGIN_DIRS` in `.claude/settings.json` (`~` is allowed there). Adding a mod: put it in `.claude/mods/<name>/`, add it to that list, run `./setup.sh`, restart Claude Code. See `CLAUDE.md` for where a new feature belongs (mod vs script).
+
+## Claude Code skills
+
+`.claude/skills/` vendors [Matt Pocock's skills](https://github.com/mattpocock/skills)
+— specifically the **main flow** documented at [aihero.dev](https://www.aihero.dev/):
+
+```
+grill-with-docs → to-spec → to-tickets → implement → code-review
+```
+
+Four more skills come along because the flow calls them by name: `grill-with-docs`
+is a seven-line skill whose whole body invokes `grilling` and `domain-modeling`,
+`implement` defers to `/tdd`, and `to-spec`/`to-tickets`/`code-review` all point at
+`/setup-matt-pocock-skills` for per-repo tracker config. Vendoring the five steps
+alone would leave those references dangling.
+
+Note that `code-review` deliberately shadows Claude Code's own built-in
+`/code-review`, so that `implement`'s cross-reference resolves to the two-axis
+reviewer the upstream docs describe.
+
+Upstream ships an `agents/openai.yaml` beside each skill — a Codex harness
+manifest encoding the same metadata Claude reads from `SKILL.md` frontmatter.
+Those are excluded, since nothing here drives Codex. A useful side effect: an
+upstream commit touching only those files produces no diff, so the daily job
+opens no PR for it.
+
+**These files are generated.** `sync-skills.sh` deletes and re-copies each skill
+directory from upstream, so hand-edits are lost on the next sync. Change
+`skills.list` to track a different set:
+
+```sh
+./sync-skills.sh   # mirror upstream into .claude/skills/, then review with git diff
+./setup.sh         # re-link into ~/.claude/skills/
+```
+
+`.claude/skills/UPSTREAM.md` records which upstream commit is currently pinned.
+
+### Staying current
+
+`.github/workflows/sync-skills.yml` runs the sync **daily at 14:47 UTC** and opens
+a draft PR whenever upstream content has changed, updating the same PR in place
+rather than stacking new ones.
+
+The schedule is measured, not arbitrary: upstream ships roughly 2.3 relevant
+changes a week, clustered in 08:00–14:00 UTC, with no commits ever landing on a
+Sunday or between 22:00 and 06:00 UTC. Firing just after that daily window closes
+gives ~6h average staleness, against ~55h for the best possible weekly slot.
+
+The workflow also asserts that upstream still documents the main flow above. If
+that chain changes, the sync still runs but the PR is flagged — the vendored set
+was picked to match it and would need re-choosing.

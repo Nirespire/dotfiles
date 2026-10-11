@@ -1,0 +1,137 @@
+name: Sync skills from upstream
+
+# Mirrors the skills listed in skills.list from github.com/mattpocock/skills
+# and opens (or refreshes) a draft PR when anything has changed.
+#
+# Schedule: upstream ships ~2.3 relevant changes/week, clustered in 08:00-14:00
+# UTC (UK working hours), with zero commits ever on a Sunday or between 22:00
+# and 06:00 UTC. Firing daily at 14:47 UTC — just after that window closes —
+# gives ~6h mean staleness vs ~55h for the best possible weekly slot.
+
+on:
+  schedule:
+    - cron: "47 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-skills
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Record the currently pinned upstream commit
+        id: before
+        run: |
+          prev="$(sed -n 's|.*/commit/\([0-9a-f]\{40\}\).*|\1|p' \
+            .claude/skills/UPSTREAM.md | head -1)"
+          echo "sha=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Sync vendored skills
+        id: sync
+        run: |
+          set +e
+          ./sync-skills.sh
+          rc=$?
+          set -e
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+
+          # 0 = clean sync, 3 = synced but the documented main flow moved.
+          # Anything else (missing upstream path, clone failure) is a real error.
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then
+            echo "::error::sync-skills.sh failed with exit $rc"
+            exit "$rc"
+          fi
+          if [ "$rc" -eq 3 ]; then
+            echo "::warning::Upstream docs no longer state the expected main flow." \
+                 "The vendored skill set needs a human re-check."
+          fi
+
+          sha="$(sed -n 's|.*/commit/\([0-9a-f]\{40\}\).*|\1|p' \
+            .claude/skills/UPSTREAM.md | head -1)"
+          ver="$(sed -n 's#^| Plugin version | `\(.*\)` |$#\1#p' \
+            .claude/skills/UPSTREAM.md | head -1)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "short=${sha:0:7}" >> "$GITHUB_OUTPUT"
+          echo "version=${ver:-unknown}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the pull request body
+        id: body
+        run: |
+          UPSTREAM=https://github.com/mattpocock/skills
+          prev='${{ steps.before.outputs.sha }}'
+          curr='${{ steps.sync.outputs.sha }}'
+
+          # Which skills actually changed, derived from the working tree
+          changed="$(git status --porcelain -- .claude/skills \
+            | awk '{print $NF}' \
+            | sed 's|^\.claude/skills/||' \
+            | cut -d/ -f1 \
+            | grep -v '^UPSTREAM\.md$' \
+            | sort -u || true)"
+
+          {
+            if [ '${{ steps.sync.outputs.rc }}' = '3' ]; then
+              echo "> [!WARNING]"
+              echo "> The upstream docs no longer state the main flow this repo"
+              echo "> vendors against:"
+              echo ">"
+              echo "> \`grill-with-docs → to-spec → to-tickets → implement → code-review\`"
+              echo ">"
+              echo "> The set of skills in \`skills.list\` was chosen to match that"
+              echo "> chain, so it may now be wrong. Re-check <https://www.aihero.dev/>"
+              echo "> and update \`skills.list\` and \`EXPECTED_CHAIN\` in"
+              echo "> \`sync-skills.sh\` before merging."
+              echo ""
+            fi
+
+            echo "Automated sync of the vendored [\`mattpocock/skills\`]($UPSTREAM)"
+            echo "main flow, run by \`.github/workflows/sync-skills.yml\`."
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Now pinned to | [\`${curr:0:7}\`]($UPSTREAM/commit/$curr) |"
+            echo "| Plugin version | \`${{ steps.sync.outputs.version }}\` |"
+            if [ -n "$prev" ] && [ "$prev" != "$curr" ]; then
+              echo "| Upstream changes | [\`${prev:0:7}...${curr:0:7}\`]($UPSTREAM/compare/$prev...$curr) |"
+            fi
+            echo ""
+
+            if [ -n "$changed" ]; then
+              echo "### Skills changed"
+              echo ""
+              printf '%s\n' "$changed" | sed 's|^|- `|; s|$|`|'
+            else
+              echo "No skill content changed — only the sync manifest was refreshed."
+            fi
+
+            echo ""
+            echo "Vendored content only. Nothing here is hand-written: \`sync-skills.sh\`"
+            echo "mirrors upstream wholesale, so review this as an upstream diff rather"
+            echo "than as edits to this repo."
+          } > /tmp/pr-body.md
+
+          cat /tmp/pr-body.md
+
+      - name: Open or refresh the pull request
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
+        with:
+          base: main
+          branch: chore/sync-mattpocock-skills
+          delete-branch: true
+          draft: true
+          add-paths: .claude/skills
+          commit-message: |
+            chore: sync vendored skills to mattpocock/skills@${{ steps.sync.outputs.short }}
+
+            Automated by .github/workflows/sync-skills.yml.
+          title: "chore: sync vendored skills to mattpocock/skills@${{ steps.sync.outputs.short }}"
+          body-path: /tmp/pr-body.md
