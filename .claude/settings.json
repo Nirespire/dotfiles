@@ -1,11 +1,10 @@
 {
   "model": "opusplan",
-  "statusLine": {
-    "type": "command",
-    "command": "/Users/sanjaynair/.claude/statusline.sh",
-    "padding": 0
-  },
+  "enableWorkflows": true,
+  "tui": "fullscreen",
   "theme": "auto",
   "agentPushNotifEnabled": true,
-  "tui": "fullscreen"
+  "env": {
+    "CLAUDE_CODE_PLUGIN_DIRS": "~/.claude/mods/statusline"
+  }
 }

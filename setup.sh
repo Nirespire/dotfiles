@@ -2,6 +2,8 @@
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=tracked-paths.sh
+source "$DOTFILES_DIR/tracked-paths.sh"
 
 # Profile: "personal" (default) or "work". Work adds Brewfile.work and signs
 # in to the Atlassian CLI. Pick it with --work or DOTFILES_PROFILE=work.
@@ -69,11 +71,11 @@ done < "$DOTFILES_DIR/macos-defaults"
 [ "$dock_changed" = true ] && killall Dock
 
 # ── 5. Symlink dotfiles ───────────────────────────────────────────────────────
+# dotfiles.list entries plus every file in .claude/mods/<name>/ (see tracked-paths.sh)
 DOTFILES=()
 while read -r file; do
-  [[ -z "$file" || "$file" == \#* ]] && continue
   DOTFILES+=("$file")
-done < "$DOTFILES_DIR/dotfiles.list"
+done < <(tracked_paths "$DOTFILES_DIR")
 
 for file in "${DOTFILES[@]}"; do
   src="$DOTFILES_DIR/$file"

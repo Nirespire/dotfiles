@@ -8,6 +8,8 @@
 set -uo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=tracked-paths.sh
+source "$DOTFILES_DIR/tracked-paths.sh"
 BREWFILE="$DOTFILES_DIR/Brewfile"
 WORK_BREWFILE="$DOTFILES_DIR/Brewfile.work"
 MACOS_DEFAULTS="$DOTFILES_DIR/macos-defaults"
@@ -19,6 +21,7 @@ brews_added=0
 casks_added=0
 defaults_updated=0
 dotfiles_imported=0
+mods_imported=0
 
 # ── helpers ────────────────────────────────────────────────────────────────
 
@@ -218,10 +221,8 @@ CANDIDATE_DOTFILES=(
 
 tracked=()
 while read -r file; do
-  [ -z "$file" ] && continue
-  case "$file" in \#*) continue ;; esac
-  tracked+=("$file")
-done < "$DOTFILES_LIST"
+  [ -n "$file" ] && tracked+=("$file")
+done < <(tracked_paths "$DOTFILES_DIR")
 
 skip_rest=false
 for candidate in "${CANDIDATE_DOTFILES[@]}"; do
@@ -258,7 +259,6 @@ echo "── Symlink health check ──"
 
 while read -r file; do
   [ -z "$file" ] && continue
-  case "$file" in \#*) continue ;; esac
 
   dest="$HOME/$file"
   src="$DOTFILES_DIR/$file"
@@ -275,11 +275,55 @@ while read -r file; do
   else
     echo "  ! $file: exists as a real file, not a symlink (re-run setup.sh or resolve manually)"
   fi
-done < "$DOTFILES_LIST"
+done < <(tracked_paths "$DOTFILES_DIR")
+
+# ── 5. Claude Code mods ─────────────────────────────────────────────────────
+echo ""
+echo "── Claude Code mods ──"
+
+SETTINGS="$DOTFILES_DIR/.claude/settings.json"
+plugin_dirs=$(jq -r '.env.CLAUDE_CODE_PLUGIN_DIRS // ""' "$SETTINGS" 2>/dev/null)
+
+# Every mod folder in the repo must be named in settings.json's
+# CLAUDE_CODE_PLUGIN_DIRS, or it is linked into $HOME but never loaded.
+for mod_dir in "$DOTFILES_DIR"/.claude/mods/*/; do
+  [ -d "$mod_dir" ] || continue
+  mod=$(basename "$mod_dir")
+  case ":$plugin_dirs:" in
+    *":~/.claude/mods/$mod:"*) echo "  ok $mod (loaded via CLAUDE_CODE_PLUGIN_DIRS)" ;;
+    *) echo "  ! $mod: not in CLAUDE_CODE_PLUGIN_DIRS in .claude/settings.json, so it will not load" ;;
+  esac
+done
+
+# Mods authored in a session land in ~/.claude/dev-mods/<session>/<mod>/.
+# Offer to pull ones the repo does not have yet.
+skip_rest=false
+for manifest in "$HOME"/.claude/dev-mods/*/*/.claude-plugin/plugin.json; do
+  [ -f "$manifest" ] || continue
+  src_mod=$(dirname "$(dirname "$manifest")")
+  mod=$(basename "$src_mod")
+  [ -d "$DOTFILES_DIR/.claude/mods/$mod" ] && continue
+  if [ "$skip_rest" = true ]; then continue; fi
+
+  prompt_yn "Import mod '$mod' from $src_mod into the repo?"; rc=$?
+  if [ $rc -eq 0 ]; then
+    mkdir -p "$DOTFILES_DIR/.claude/mods/$mod"
+    (cd "$src_mod" && tar -cf - --exclude='.claude-plugin/types' --exclude=node_modules .) \
+      | tar -xf - -C "$DOTFILES_DIR/.claude/mods/$mod"
+    tmp="$SETTINGS.tmp"
+    jq --arg d "~/.claude/mods/$mod" \
+      '.env.CLAUDE_CODE_PLUGIN_DIRS = ([(.env.CLAUDE_CODE_PLUGIN_DIRS // "" | split(":")[] | select(. != "")), $d] | unique | join(":"))' \
+      "$SETTINGS" > "$tmp" && cat "$tmp" > "$SETTINGS" && rm -f "$tmp"
+    mods_imported=$((mods_imported + 1))
+    echo "  + imported $mod and added it to CLAUDE_CODE_PLUGIN_DIRS; run ./setup.sh to link it"
+  elif [ $rc -eq 2 ]; then
+    skip_rest=true
+  fi
+done
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
-echo "==> Done. brews:+$brews_added casks:+$casks_added defaults:+$defaults_updated dotfiles:+$dotfiles_imported"
-if [ $((brews_added + casks_added + defaults_updated + dotfiles_imported)) -gt 0 ]; then
+echo "==> Done. brews:+$brews_added casks:+$casks_added defaults:+$defaults_updated dotfiles:+$dotfiles_imported mods:+$mods_imported"
+if [ $((brews_added + casks_added + defaults_updated + dotfiles_imported + mods_imported)) -gt 0 ]; then
   echo "==> Changes were left in the working tree. Review with: git -C \"$DOTFILES_DIR\" diff"
 fi
