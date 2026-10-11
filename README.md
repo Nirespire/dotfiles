@@ -27,7 +27,7 @@ Idempotent — safe to re-run.
 3. Clones [pure](https://github.com/sindresorhus/pure) prompt to `~/.zsh/pure`
 4. Installs [nvm](https://github.com/nvm-sh/nvm) to `~/.nvm`
 5. Applies the macOS defaults listed in `macos-defaults` (currently: Dock auto-hide with zero-delay reveal)
-6. Symlinks each dotfile listed in `dotfiles.list` from the repo into `$HOME` (backs up pre-existing files as `*.bak`)
+6. Symlinks each dotfile listed in `dotfiles.list`, plus every file under `.claude/mods/`, from the repo into `$HOME` (backs up pre-existing files as `*.bak`)
 
 ## Reconciling machine drift back into the repo
 
@@ -38,8 +38,9 @@ tweak a watched macOS default, or hand-create a config file, run:
 ./reconcile.sh
 ```
 
-It finds Brew packages, `macos-defaults` values, and dotfiles present on the
-machine but missing from the repo, and prompts per item (`y`/`N`/`skip-rest`)
+It finds Brew packages, `macos-defaults` values, dotfiles and Claude Code mods
+(authored in a session under `~/.claude/dev-mods/`) present on the machine but
+missing from the repo, and prompts per item (`y`/`N`/`skip-rest`)
 before writing anything back. It never commits — review with `git diff`
 afterward. Brewfile entries that exist but aren't installed here are reported
 only, never removed (the Brewfile is an intentional superset across machines).
@@ -58,12 +59,14 @@ only, never removed (the Brewfile is an intentional superset across machines).
 | `setup.sh` | Full bootstrap script |
 | `reconcile.sh` | Walks machine → repo drift (Brew, defaults, dotfiles) and writes back what you accept |
 | `install.sh` | Remote curl bootstrap: clones repo then runs `setup.sh` |
-| `.claude/settings.json` | Claude Code settings (model, theme, statusline) |
-| `.claude/statusline.sh` | Claude Code custom status line (cwd · branch · model · context · rate limits) |
+| `.claude/settings.json` | Claude Code settings (model, theme, `CLAUDE_CODE_PLUGIN_DIRS` that loads the mods) |
+| `.claude/mods/` | Claude Code mods, one folder each; `statusline` draws cwd · branch · model · context · rate limits |
+| `tracked-paths.sh` | Shared by `setup.sh`/`reconcile.sh`: `dotfiles.list` plus every mod file |
 
 ## Notes
 
 - **Apple Silicon only** — paths assume `/opt/homebrew`.
 - **Zsh only** — bash is not supported.
 - The repo is the source of truth. Always edit files here, not in `~`.
-- `SSH_AUTH_SOCK` in `.zshrc` and the statusline path in `.claude/settings.json` are machine-specific and intentionally not portable.
+- `SSH_AUTH_SOCK` in `.zshrc` is machine-specific and intentionally not portable.
+- Mods load from `env.CLAUDE_CODE_PLUGIN_DIRS` in `.claude/settings.json` (`~` is allowed there). Adding a mod: put it in `.claude/mods/<name>/`, add it to that list, run `./setup.sh`, restart Claude Code. See `CLAUDE.md` for where a new feature belongs (mod vs script).
