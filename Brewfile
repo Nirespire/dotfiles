@@ -7,5 +7,8 @@ brew "go"
 brew "jq"
 brew "wget"
 brew "tmux"
+brew "herdr"
+brew "opentofu"
+brew "shellcheck"
 
 cask "claude-code"
